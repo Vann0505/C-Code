@@ -1,0 +1,142 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Node {
+    char data;
+    struct Node *next, *prev;
+} Node;
+
+typedef struct Stack {
+    Node *top;
+} Stack;
+
+void inisialisasiStack(Stack *stack) {
+    stack->top = NULL;
+}
+
+int kosong(Stack *stack) {
+    return stack->top == NULL;
+}
+
+void push(Stack *stack, char data) {
+    Node *baru = (Node *)malloc(sizeof(Node));
+    if (!baru) {
+        printf("Error: Memori penuh!\n");
+        return;
+    }
+    baru->data = data;
+    baru->next = stack->top;
+    baru->prev = NULL;
+    if (stack->top) {
+        stack->top->prev = baru;
+    }
+    stack->top = baru;
+}
+
+char pop(Stack *stack) {
+    if (kosong(stack)) {
+        return '\0';
+    }
+    Node *hapus = stack->top;
+    char data = hapus->data;
+    stack->top = hapus->next;
+    if (stack->top) {
+        stack->top->prev = NULL;
+    }
+    free(hapus);
+    return data;
+}
+
+char peek(Stack *stack) {
+    return kosong(stack) ? '\0' : stack->top->data;
+}
+
+int prioritas(char op) {
+    switch (op) {
+        case '+': case '-': return 1;
+        case '*': case '/': return 2;
+        case '^': return 3;
+        default: return 0;
+    }
+}
+
+void infixKePostfix(char *infix, char *postfix) {
+    Stack stack;
+    inisialisasiStack(&stack);
+    int i = 0, j = 0;
+    while (infix[i] != '\0') {
+        if ((infix[i] >= '0' && infix[i] <= '9') || (infix[i] >= 'A' && infix[i] <= 'Z') || (infix[i] >= 'a' && infix[i] <= 'z')) {
+            postfix[j++] = infix[i];
+        } else if (infix[i] == '(') {
+            push(&stack, infix[i]);
+        } else if (infix[i] == ')') {
+            while (!kosong(&stack) && peek(&stack) != '(') {
+                postfix[j++] = pop(&stack);
+            }
+            pop(&stack);
+        } else if (infix[i] != ' ') {
+            while (!kosong(&stack) && prioritas(peek(&stack)) >= prioritas(infix[i])) {
+                postfix[j++] = pop(&stack);
+            }
+            push(&stack, infix[i]);
+        }
+        i++;
+    }
+    while (!kosong(&stack)) {
+        postfix[j++] = pop(&stack);
+    }
+    postfix[j] = '\0';
+}
+
+void postfixKeInfix(char *postfix, char *infix) {
+    Stack stack;
+    inisialisasiStack(&stack);
+    char temp[50][50];
+    int i = 0, j = 0;
+    
+    while (postfix[i] != '\0') {
+        if ((postfix[i] >= '0' && postfix[i] <= '9') || (postfix[i] >= 'A' && postfix[i] <= 'Z') || (postfix[i] >= 'a' && postfix[i] <= 'z')) {
+            char str[2] = {postfix[i], '\0'};
+            strcpy(temp[j], str);
+            push(&stack, j);
+            j++;
+        } else {
+            int indeks2 = pop(&stack);
+            int indeks1 = pop(&stack);
+            char ekspresi[50];
+            snprintf(ekspresi, sizeof(ekspresi), "(%s%c%s)", temp[indeks1], postfix[i], temp[indeks2]);
+            strcpy(temp[j], ekspresi);
+            push(&stack, j);
+            j++;
+        }
+        i++;
+    }
+    strcpy(infix, temp[pop(&stack)]);
+}
+
+int main() {
+    int pilihan;
+    char ekspresi[50], hasil[50];
+
+    printf("Pilih Mau ubah kemana?\n");
+    printf("1. Infix -> Postfix\n");
+    printf("2. Postfix -> Infix\n");
+    printf("Pilihan: ");
+    scanf("%d", &pilihan);
+
+    if (pilihan == 1) {
+        printf("Masukkan Infix: ");
+        scanf("%s", ekspresi);
+        infixKePostfix(ekspresi, hasil);
+        printf("Hasil Postfix: %s\n", hasil);
+    } else if (pilihan == 2) {
+        printf("Masukkan Postfix: ");
+        scanf("%s", ekspresi);
+        postfixKeInfix(ekspresi, hasil);
+        printf("Hasil Infix: %s\n", hasil);
+    } else {
+        printf("Pilihan tidak valid!\n");
+    }
+    return 0;
+}
