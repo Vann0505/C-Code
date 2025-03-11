@@ -1,0 +1,172 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define SIZE 10 
+
+struct node {
+    char data[100];
+    struct node *next;
+} *hashTable[26], *curr; 
+
+
+int hashFunction(char data[]) {
+    return tolower(data[0]) - 'a';
+}
+
+int midSquareHash(int key) {
+    int squared = key * key;
+    int mid = (squared / 100) % 100;
+    return mid % SIZE;
+}
+
+int divisionHash(int key) {
+    return key % SIZE;
+}
+
+int foldingHash(int key) {
+    int part1 = key / 1000;
+    int part2 = key % 1000;
+    return (part1 + part2) % SIZE;
+}
+
+int digitExtractionHash(int key) {
+    return (key / 10) % 10 % SIZE;
+}
+
+int rotationHash(int key) {
+    int lastDigit = key % 10;
+    int rotated = (key / 10) + (lastDigit * 10000);
+    return rotated % SIZE;
+}
+
+
+void linearProbingInsert(int key, char data[]) {
+    int index = key;
+    while (hashTable[index] != NULL) { 
+        index = (index + 1) % SIZE;
+    }
+    struct node *newNode = (struct node*)malloc(sizeof(struct node));
+    strcpy(newNode->data, data);
+    newNode->next = NULL;
+    hashTable[index] = newNode;
+}
+
+void rehashingInsert(int key, char data[]) {
+    int newKey = (key + 7) % SIZE;
+    while (hashTable[newKey] != NULL) {
+        newKey = (newKey + 7) % SIZE;
+    }
+    struct node *newNode = (struct node*)malloc(sizeof(struct node));
+    strcpy(newNode->data, data);
+    newNode->next = NULL;
+    hashTable[newKey] = newNode;
+}
+
+void chainingInsert(int key, char data[]) {
+    struct node *newNode = (struct node*)malloc(sizeof(struct node));
+    strcpy(newNode->data, data);
+    newNode->next = NULL;
+    
+    if (hashTable[key] == NULL) {
+        hashTable[key] = newNode;
+    } else {
+        struct node *curr = hashTable[key];
+        while (curr->next != NULL) {
+            curr = curr->next;
+        }
+        curr->next = newNode;
+    }
+}
+
+
+char hashFunctionName[50], collisionMethod[50];
+
+int chooseHashFunction(char data[]) {
+    int key = hashFunction(data);
+
+    if (strcmp(hashFunctionName, "Mid-Square") == 0) return midSquareHash(key);
+    if (strcmp(hashFunctionName, "Division") == 0) return divisionHash(key);
+    if (strcmp(hashFunctionName, "Folding") == 0) return foldingHash(key);
+    if (strcmp(hashFunctionName, "Digit Extraction") == 0) return digitExtractionHash(key);
+    if (strcmp(hashFunctionName, "Rotation") == 0) return rotationHash(key);
+    return divisionHash(key);
+}
+
+void insertData(char data[]) {
+    int hashKey = chooseHashFunction(data);
+
+    if (strcmp(collisionMethod, "Linear Probing") == 0) linearProbingInsert(hashKey, data);
+    else if (strcmp(collisionMethod, "Rehashing") == 0) rehashingInsert(hashKey, data);
+    else chainingInsert(hashKey, data);
+}
+
+
+void viewHashTable() {
+    for (int i = 0; i < SIZE; i++) {
+        if (hashTable[i] != NULL) {
+            printf("Hash Table Index [%d]: ", i);
+            struct node *curr = hashTable[i];
+            while (curr != NULL) {
+                printf("%s -> ", curr->data);
+                curr = curr->next;
+            }
+            printf("NULL\n");
+        }
+    }
+}
+
+
+int main() {
+    int choice;
+    char data[100];
+
+    printf("Pilih Hash Function:\n");
+    printf("1. Mid-Square\n");
+    printf("2. Division\n");
+    printf("3. Folding\n");
+    printf("4. Digit Extraction\n");
+    printf("5. Rotation\n");
+    printf("Masukkan pilihan: ");
+    scanf("%d", &choice);
+    getchar();
+
+    switch (choice) {
+        case 1: strcpy(hashFunctionName, "Mid-Square"); break;
+        case 2: strcpy(hashFunctionName, "Division"); break;
+        case 3: strcpy(hashFunctionName, "Folding"); break;
+        case 4: strcpy(hashFunctionName, "Digit Extraction"); break;
+        case 5: strcpy(hashFunctionName, "Rotation"); break;
+        default: strcpy(hashFunctionName, "Division"); break;
+    }
+
+    printf("\nPilih Collision Handling:\n");
+    printf("1. Linear Probing\n");
+    printf("2. Rehashing\n");
+    printf("3. Chaining\n");
+    printf("Masukkan pilihan: ");
+    scanf("%d", &choice);
+    getchar();
+
+    switch (choice) {
+        case 1: strcpy(collisionMethod, "Linear Probing"); break;
+        case 2: strcpy(collisionMethod, "Rehashing"); break;
+        case 3: strcpy(collisionMethod, "Chaining"); break;
+        default: strcpy(collisionMethod, "Chaining"); break;
+    }
+    
+    printf("\nMasukkan Data (Ketik 'exit' untuk berhenti):\n");
+    while (1) {
+        printf("Input: ");
+        scanf("%s", data);
+        if (strcmp(data, "exit") == 0) break;
+
+        insertData(data);
+    }
+
+    printf("\n===== Hash Table =====\n");
+    viewHashTable();
+
+    return 0;
+}
